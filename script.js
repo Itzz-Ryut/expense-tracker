@@ -1,51 +1,86 @@
+// Selecting elements
 const item_title = document.getElementById('title');
 const item_amount = document.getElementById('amount');
 const add_btn = document.querySelector('.add-btn');
 const expenseList = document.querySelector('.expense-list');
 const total = document.getElementById('total');
-let sum = 0; // for total amount
 
-add_btn.addEventListener('click', ()=>{
-    const new_list = document.createElement('li');
+// Declare main variables
+let expenses = JSON.parse(localStorage.getItem("expenses")) || []; // load- saved or empty
+let sum = 0;
+let id = expenses.length > 0 ? expenses[expenses.length - 1].id + 1 : 0; // ID count
 
+// Function: Save to localStorage
+function saveExpenses() {
+  localStorage.setItem("expenses", JSON.stringify(expenses));
+}
 
-    
-    const input_name = item_title.value;
-    const input_amount = item_amount.value;
-    
-    //Check if its value empty
-    if(input_name === '' || input_amount === '') {
-        alert('Please fill empty fields');
-        return;
-        
-    }
-    
-    new_list.textContent = `${input_name} - ${input_amount}`;
-    
-    expenseList.appendChild(new_list);
-    // updating amount if new item added
+// Function: Update total
+function updateTotal() {
+  sum = expenses.reduce((acc, e) => acc + e.amount, 0);
+  total.textContent = sum;
+}
 
-    sum += parseInt(input_amount); 
-    total.innerHTML = sum;
+// Function: Create visual list item
+function createExpenseItem(expense) {
+  const li = document.createElement('li');
+  li.textContent = `${expense.title} - ${expense.amount}`;
 
-    //creating delete button:-
-    const deleteButton = document.createElement('button');
-    deleteButton.textContent = '❌';
+  // delete button
+  const deleteButton = document.createElement('button');
+  deleteButton.textContent = '❌';
+  deleteButton.classList.add('delete-btn');
+  deleteButton.dataset.id = expense.id;
 
-    deleteButton.setAttribute('data-amount', input_amount);
+  li.appendChild(deleteButton);
+  expenseList.appendChild(li);
 
-    new_list.appendChild(deleteButton);
+  // delete feature
+  deleteButton.addEventListener('click', () => {
+    // remove from UI
+    li.remove();
+    // remove from array
+    expenses = expenses.filter(e => e.id !== expense.id);
+    // update storage
+    saveExpenses();
+    // update total
+    updateTotal();
+  });
+}
 
-    deleteButton.addEventListener('click',() =>{
-        new_list.remove();
-        sum -= parseInt(deleteButton.dataset.amount);
-        total.innerHTML = sum;
-    })
+// Function: Add new expense
+function addExpense() {
+  const title = item_title.value.trim();
+  const amount = parseInt(item_amount.value.trim());
 
+  if (!title || !amount) {
+    alert("Please fill both fields!");
+    return;
+  }
 
+  const newExpense = {
+    id: id++,
+    title: title,
+    amount: amount
+  };
 
+  // add to array
+  expenses.push(newExpense);
+  // save to localStorage
+  saveExpenses();
+  // show in list
+  createExpenseItem(newExpense);
+  // update total
+  updateTotal();
 
-    item_title.value = '';
-    item_amount.value = '';
+  // clear inputs
+  item_title.value = '';
+  item_amount.value = '';
+}
 
-});
+// Add event listener for add button
+add_btn.addEventListener('click', addExpense);
+
+// Load all saved expenses on page start
+expenses.forEach(expense => createExpenseItem(expense));
+updateTotal();
